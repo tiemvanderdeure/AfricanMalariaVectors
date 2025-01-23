@@ -80,7 +80,7 @@ function load_lulc(roi)
         "Global 7-land-types LULC projection dataset under SSPs-RCPs",
         "global_LULC_2015.tif"
     )
-    isdir(path) && download_lulc() 
+    isdir(path) || download_lulc() 
     lulc = Raster(path, name = :lulc)
     lulc_res = CA.categorical(resample(lulc; to = roi, method = :mode))
     current = CA.recode(lulc_res, missing, LULC_TYPES...) # default to missing so permanent water is missing
@@ -99,24 +99,20 @@ function load_lulc(roi)
     return (; current, future)
 end
 
-import RasterDataSources.URIs: URI
-
 function load_worldpop(to)
     dir = joinpath(RasterDataSources.rasterpath(), "WorldPop")
     if !isdir(dir) mkdir(dir) end
     filepath = joinpath(dir, "ppp_2020_1km_Aggregated.tif")
     fileurl = URI("https://data.worldpop.org/GIS/Population/Global_2000_2020/2020/0_Mosaicked/ppp_2020_1km_Aggregated.tif")
-    RasterDataSources._maybe_download(fileurl, filepath)
+    maybe_download(fileurl, filepath)
     pop = Raster(filepath; lazy = true) |> replace_missing
     return resample(read(crop(pop; to)); to, method = :sum) # aggregate might be better here?
 end
 
-# 
-using RasterDataSources.ZipFile
 function download_lulc() 
     url = URI("https://zenodo.org/records/4584775/files/Global%207-land-types%20LULC%20projection%20dataset%20under%20SSPs-RCPs.zip")
     dir = joinpath(RasterDataSources.rasterpath(), "Global 7-land-types LULC projection dataset under SSPs-RCPs.zip")
-    RasterDataSources._maybe_download(url, dir)
+    maybe_download(url, dir)
     destpath = joinpath(RasterDataSources.rasterpath(), "Global 7-land-types LULC projection dataset under SSPs-RCPs")
     isdir(destpath) || mkdir(destpath)
     try 
@@ -126,7 +122,6 @@ function download_lulc()
     end
 
 end
-
 
 ## Faster broadcasting over categorical arrays
 function Base.Broadcast.broadcasted(::typeof(==), ca::CA.CategoricalArray, x)

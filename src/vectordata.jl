@@ -1,8 +1,20 @@
 species_metadata() = CSV.read("data/species.csv", DataFrame; types = Dict(:species_level => Bool))
 
+HTTP.get("https://datadryad.org/api/v2/files/68438/download")
+
+
 function load_occurrences()
+    mapdatafile = joinpath("data", "map_data.csv")
+    masseydatafile = joinpath("data", "Bionomics+Africa.csv")
+    snowdatafile = joinpath("data", "Africa Vectors database_1898-2016.csv")
+
+    # Check all data files exist
+    isfile(mapdatafile) || download_map_data(mapdatafile)
+    maybedownload("https://datadryad.org/api/v2/files/68438/download", masseydatafile)
+    check_file(snowdatafile, "http://dx.doi.org/10.7910/DVN/NQ6CUN")
+
     # Malaria Atlas Project data
-    mapdata = CSV.read("data/map_data.csv", DataFrame; missingstring = "NA")
+    mapdata = CSV.read(mapdatafile, DataFrame; missingstring = "NA")
     map_species = CSV.read("data/map_species.csv", DataFrame; delim = ',') |> dropmissing!
     dropmissing!(mapdata, [:longitude, :latitude, :year_end]) # allow missing years for this dataset??
     mapdata.geometry = map((x,y) -> (x,y), mapdata.longitude, mapdata.latitude)
@@ -11,7 +23,7 @@ function load_occurrences()
     mapdata = mapdata[!, [:year_start, :year_end, :species, :geometry]]
 
     # Massey et al 2016 data
-    massey = CSV.read("data/Bionomics Africa.csv", DataFrame)
+    massey = CSV.read(masseydatafile, DataFrame)
     massey_species = CSV.read("data/massey_species.csv", DataFrame) |> dropmissing!
     dropmissing!(massey, [:long, :lat, :year_end])
     filter!(x -> x.area_type == "point", massey)
@@ -22,7 +34,7 @@ function load_occurrences()
     massey = massey[!, [:year_start, :year_end, :species, :geometry]]
 
     # Snow / Kyalo et al 2017 dataset
-    vectors = CSV.read("data/dataverse_files/Africa Vectors database_1898-2016.csv", DataFrame)
+    vectors = CSV.read(snowdatafile, DataFrame)
     snow_species = CSV.read("data/snow_species.csv", DataFrame) |> dropmissing!
     dropmissing!(vectors, [:Long, :Lat])
     vectors.geometry = map((x,y) -> (x,y), vectors.Long, vectors.Lat)
@@ -51,12 +63,15 @@ end
 
 function load_malaria(; dir = "data")
     path = joinpath(dir, "00 Africa 1900-2015 SSA PR database (260617).csv")
-    isfile(path) || error(
-        "
-            Expected malaria database to be at $path, but it does not exist.
-            The malaria database is available at https://doi.org/10.7910/DVN/Z29FR0
-            Please download it manually and store it at the specified path
-        "
-    )
+    check_file(path, "https://doi.org/10.7910/DVN/Z29FR0")
     CSV.read(path, DataFrame)
+end
+
+function download_map_data(mapdatafile)
+    Rrequire("malariaAtlas")
+    R"""
+        africadata <- getVecOcc(continent = 'Africa')
+        write.csv(africadata, $mapdatafile, row.names = FALSE)
+    """
+    return nothing
 end
