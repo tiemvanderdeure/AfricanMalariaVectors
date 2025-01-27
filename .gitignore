@@ -1,6 +1,6 @@
 .vscode*
-data/dataverse_files*
-data/Bionomics Africa.csv
+data/Africa Vectors database_1898-2016.csv
+data/Bionomics+Africa.csv
 data/00 Africa 1900-2015 SSA PR database (260617).csv
 images*
 /tables*
