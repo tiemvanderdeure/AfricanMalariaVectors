@@ -31,6 +31,8 @@ You could run these from the command line by navigating the this folder, opening
 
 Alternatively, you can use an environment like Visual Studio Code to run them line-by-line.
 
+This code makes use of multi-threading to speed up computation, see the [relevant section of the Julia manual](https://docs.julialang.org/en/v1/manual/multi-threading/) for how to run Julia with multiple threads.
+
 ## Contact
 For any questions about the code in this repository, contact Tiem van der Deure at email tvd@sund.ku.dk.
 
