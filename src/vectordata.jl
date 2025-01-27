@@ -7,7 +7,7 @@ function load_occurrences()
 
     # Check all data files exist
     isfile(mapdatafile) || download_map_data(mapdatafile)
-    maybedownload("https://datadryad.org/api/v2/files/68438/download", masseydatafile)
+    maybe_download("https://datadryad.org/api/v2/files/68438/download", masseydatafile)
     check_file(snowdatafile, "http://dx.doi.org/10.7910/DVN/NQ6CUN")
 
     # Malaria Atlas Project data
@@ -61,7 +61,10 @@ end
 function load_malaria(; dir = "data")
     path = joinpath(dir, "00 Africa 1900-2015 SSA PR database (260617).csv")
     check_file(path, "https://doi.org/10.7910/DVN/Z29FR0")
-    CSV.read(path, DataFrame)
+    malariadata = CSV.read(path, DataFrame)
+    rename!(malariadata, Symbol("PfPR2-10") => :PfPR2_10)
+    filter!(r -> r.AREA_TYPE == "Point" && r.YY >= 1980 && r.YY <= 2010, malariadata)
+    return select(malariadata, [:Lat, :Long, :PfPR2_10])
 end
 
 function download_map_data(mapdatafile)

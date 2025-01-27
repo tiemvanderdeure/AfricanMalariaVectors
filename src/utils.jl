@@ -21,7 +21,7 @@ function check_file(path, url)
 end
 
 ## Downloads a file if it doesn't exist already
-function maybedownload(url, path; force = false)
+function maybe_download(url, path; force = false)
     if force || !isfile(path)
         @info "Starting download for $url"
         download(url, path)
