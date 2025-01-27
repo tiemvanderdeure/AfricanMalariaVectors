@@ -1,8 +1,5 @@
 species_metadata() = CSV.read("data/species.csv", DataFrame; types = Dict(:species_level => Bool))
 
-HTTP.get("https://datadryad.org/api/v2/files/68438/download")
-
-
 function load_occurrences()
     mapdatafile = joinpath("data", "map_data.csv")
     masseydatafile = joinpath("data", "Bionomics+Africa.csv")
