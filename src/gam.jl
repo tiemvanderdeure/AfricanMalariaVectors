@@ -1,7 +1,4 @@
-using RCall, DataFrames, GLM
 import MLJModelInterface as MMI
-import CategoricalArrays as CA
-R"library(mgcv)"
 
 mutable struct GAMClassifier <:  MMI.Probabilistic
     k::Int
@@ -10,6 +7,7 @@ mutable struct GAMClassifier <:  MMI.Probabilistic
 end
 GAMClassifier(; k, method = :REML, gamma = 1.0) = GAMClassifier(k, method, gamma)
 function MMI.fit(m::GAMClassifier, verbosity, X, y)
+    Rrequire("mgcv")
     df = DataFrame(X)
     schema = MMI.schema(X)
     cont_vars = schema.names[findall(.!(schema.scitypes .<: MMI.Finite))]
@@ -72,6 +70,7 @@ function MMI.predict(m::GAMClassifier, (gam, vars, decode), Xnew)
     MMI.UnivariateFinite(decode, [1 .- p, p])
 end
 
+# predict through R. Tool to check correctness of the results
 function Rpredict(mach, Xnew)
     df = DataFrame(Xnew)
     gam = mach.fitresult[1].gam
@@ -114,7 +113,7 @@ function cubregspline!(Xp, x; xk::AbstractVector, Fm::Matrix{Float64})
     @inbounds @views Xp .= cjm .* Fm[:, j] .+ cjp .* Fm[:, j+1]
     Xp[j] += ajm
     Xp[j+1] += ajp
-    return
+    return Xp
 end
 cubregspline(x; xk::AbstractVector, Fm::Matrix{Float64}) = cubregspline!(similar(xk), x; xk, Fm)
 

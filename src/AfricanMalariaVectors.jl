@@ -1,11 +1,13 @@
 __precompile__(false)
 module AfricanMalariaVectors
-    using CSV, Tables, DataFrames, StatsBase, Statistics, RCall
-    using Rasters, RasterDataSources, ArchGDAL, NaturalEarth, LibGEOS
-    import MLJBase
+    using CSV, Tables, DataFrames, StatsBase, Statistics, RCall, GLM
+    using Rasters, RasterDataSources, ArchGDAL, NaturalEarth, LibGEOS, Dates
+    import MLJBase, Random
 
     import GeoInterface as GI
     import GeometryOps as GO
+    import CategoricalArrays as CA
+
 
     import RasterDataSources.URIs: URI
 
@@ -44,4 +46,5 @@ module AfricanMalariaVectors
     include("plots.jl")
     include("shapley.jl")
     include("cbi.jl")
+    include("gridcv.jl")
 end
