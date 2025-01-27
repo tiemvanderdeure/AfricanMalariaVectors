@@ -1,6 +1,7 @@
 using Shapley, Combinatorics, Tables, Statistics, ProgressMeter
 import SpeciesDistributionModels as SDM
 
+# adapt from shapley library to handle rasterstack inputs
 function shapley(alg::Shapley.Algorithm, e::SDM.SDMensemble, X::AbstractRasterStack)
     bm = boolmask(X)
     preds = Tables.columntable(X[bm])
@@ -19,6 +20,7 @@ function shapley(alg::Shapley.Algorithm, e::SDM.SDMensemble, X::AbstractRasterSt
     return outras
 end
 
+# implement Bshap as defined by http://proceedings.mlr.press/v119/sundararajan20b/sundararajan20b.pdf
 function Bshap(predict, X::AbstractRasterStack, Z::AbstractRasterStack; kw...)
     @assert dims(X) == dims(Z)
     bm = boolmask(X) .&& boolmask(Z)
@@ -77,66 +79,3 @@ function Bshap(predict, X, Z; features = nothing)
     end
     return shapvalues
 end
-
-#=
-n = 200
-
-x = (a = rand(n), b = rand(n), c= rand(n), d = rand(n), e = rand(n), f = rand(n))
-Z = (a = x.a .+ 0.5, b = x.b .+ 0.1, c = x.c, d = x.d, e = x.e, f = rand(n))
-pred(x) = (x.a .+ x.b .+ x.c).^x.d
-
-shapvals = Bshap(pred, x, Z)
-
-pred(Z) .- pred(X)
-
-shapvals.e |> sum
-### scales as 2^N (length(collect(combinations(1:N))))
-
-combs = 
-length(collect(combs))
-l = length(comb)
-nfeatures - 1 - l
-
-for comb in vcat([[]], collect(combs))
-    l = length(comb)
-    n_permutations = factorial(l) * factorial(nfeatures - 1 - l)
-    for c in comb
-        X_[c] .= Z[c]
-    end
-    pred_base = pred(X_)
-end
-
-@time merge(X_[(:a, :b)], Z[(:c,)])
-
-@time for c in comb
-    X_[c] .= Z[c]
-end
-
-collect(combs)
-
-# particular case of Shapley
-perms = permutations(1:2)
-
-changes = NamedTuple(k => zeros(length(perms), Tables.rowcount(X)) for k in keys(tab))
-tab = deepcopy(X)
-
-map(enumerate(perms)) do (i, p)
-    for k in keys(tab)
-        tab[k] .= X[k]
-    end
-    refvalue = pred(tab)
-    for j in p
-        tab[j] .= Z[j]
-        newvalue = pred(tab)
-        changes[j][i,:] .= (newvalue .- refvalue)
-        refvalue = newvalue
-    end
-end
-
-map(x -> mean(x; dims = 2), changes)
-
-X = (a = rand(2), b = rand(2))
-Z = (a = X.a .+ 0.5, b = X.b .- 0.1)
-
-shapley(x -> x.a .+ x.b, Shapley.MonteCarlo(10_000), X, 1, Z)
-=#
