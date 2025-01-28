@@ -4,15 +4,10 @@ using SpeciesDistributionModels: Loess
 using NaturalEarth
 countries = naturalearth("ne_10m_admin_0_countries")
 
-global imagepath = joinpath("images", "nat_cc")
+global imagepath = resultspath
 
-#set_theme!(Theme(font = :))
-#ytheme = Theme(font = "Helvetica")
-
-## New Figure 1
-
-## Figure with scatter plots of temperature and precipitation
-begin
+## Figure 1 - scatter plots of temperature and precipitation
+let colors = (:lightblue, :purple)
     temp_prec = bioclim.current[(:bio1, :bio12)]
     temp_prec_points = map(x -> (extract(temp_prec, x; geometry = false, skipmissing = true)), occs_thinned)
     temp_prec_points_all = vcat(temp_prec_points...) |> Tables.columntable
@@ -26,7 +21,6 @@ begin
 
         data = (temp_prec_points_all, temp_prec_focus_species[S])
         pointdata = (points_all, points_focus_species[S])
-        colors = (:lightblue, :purple)
         labels = ("All\nAnopheles", "A. $(as_label(S))")
 
         ## map on the left
@@ -81,8 +75,8 @@ let cmap = Reverse(:Spectral), colorrange = (0,1)
         for (i, s) in enumerate(FOCUS_SPECIES)
             axes = [map_axis(fig[j, i]; land) for j in 1:3]
             plot!(axes[1], preds.current[s]; colormap = cmap, colorrange)
-            plot!(axes[2], preds_future_mean[s][date = At(Date(2055)), ssp = At(ssp)]; colormap = cmap, colorrange)
-            plot!(axes[3], preds_future_mean[s][date = At(Date(2085)), ssp = At(ssp)]; colormap = cmap, colorrange)
+            plot!(axes[2], preds_future_mean[s][Ti = At(Date(2055)), ssp = At(ssp)]; colormap = cmap, colorrange)
+            plot!(axes[3], preds_future_mean[s][Ti = At(Date(2085)), ssp = At(ssp)]; colormap = cmap, colorrange)
             Label(fig[1, i, Top()], "A. " * as_label(s), font = :bold_italic, padding = (0,0,5,0))
             colsize!(fig.layout, i, Aspect(1, 1.0))
         end
@@ -112,7 +106,15 @@ bshapvals_future_comb = map(bshapvals_future) do s
         lulc = s.lulc))
 end
 
-bg = Rasters.sample(Xoshiro(0), bioclim.current, 10000; skipmissing = true, geometry = (X, Y)) |> Tables.columntable
+using Rasters.Lookups
+xdim = -17.991806203550002:0.041666666500000005:51.92486018345001
+ydim = 24.99152731785001:-0.0416666665:-34.92513910914999 
+ds = (X(xdim; sampling = Intervals(Start())), Y(ydim; sampling = Intervals(Start())))
+ras = Raster(ones(ds))
+extr = extract(ras, DimPoints(ds), skipmissing = false)
+getfield.(extr, 2) .|> ismissing |> count
+
+bg = Rasters.sample(Xoshiro(0), Rasters.shiftlocus(Lookups.Center(), predictors.current), 10000; skipmissing = true, geometry = (X, Y)) |> Tables.columntable
 bg_combined = (temperature = bg.bio1, precipitation = bg.bio12 , lulc = bg.lulc)
 
 # labels and colors
@@ -202,8 +204,8 @@ fig4 = begin
     mapaxis = map_axis(glleft[1,1])
     poly!(mapaxis, countries.geometry, color = :transparent, strokecolor = :black, strokewidth = 0.3)
     sc = scatter!(
-        malariadataclean.Long, malariadataclean.Lat; 
-        color = malariadataclean.PfPR2_10, colorrange = (0,100), colormap = :viridis,
+        malariadata.Long, malariadata.Lat; 
+        color = malariadata.PfPR2_10, colorrange = (0,100), colormap = :viridis,
         markersize = 5, strokewidth = 0
     )
     Colorbar(
@@ -234,7 +236,7 @@ fig4 = begin
         step = 0.05
         stop = 1.0 - windowwidth
         binned_values = map(start:step:stop) do i
-            malariadataclean.PfPR2_10[i .<= malariadataclean[!, S] .< (i + windowwidth)]
+            malariadata.PfPR2_10[i .<= malariadata[!, S] .< (i + windowwidth)]
         end
 
         xs = ((start:step:stop) .+ windowwidth / 2)[.~isempty.(binned_values)]
@@ -307,7 +309,7 @@ fig5 = let bivcmap = bivariate_colormap(xticks, yticks; colors = brewer_seqseq2)
         plot!(ax, rasters_to_cmap(preds.current[s], pop; cmap = bivcmap))
         for (i, date) in enumerate(DATES)
             ax = map_axis(mapgl[j, i+1], title = j == 1 ? as_label(date) : "")
-            plot!(ax, rasters_to_cmap(preds_future_mean[s][date = At(date), ssp = At(ssp)], pop; cmap = bivcmap))
+            plot!(ax, rasters_to_cmap(preds_future_mean[s][Ti = At(date), ssp = At(ssp)], pop; cmap = bivcmap))
         end
         Label(mapgl[j, 1, Left()], string(ssp), rotation = pi/2, tellheight = false, font = :bold)
         rowsize!(mapgl, j, Aspect(1, 1))
@@ -378,11 +380,3 @@ fig5 = let bivcmap = bivariate_colormap(xticks, yticks; colors = brewer_seqseq2)
     save(joinpath(imagepath, "figure5.png"), fig)
     fig
 end
-
-# These numbers are cited in the text
-gamb_end_of_cent = pop_at_risk.future.gambiae[date = 2, ssp = 2]
-nili_end_of_cent = pop_at_risk.future.nili_sl[date = 2, ssp = 2]
-mean(nili_end_of_cent)
-extrema(nili_end_of_cent)
-mean(gamb_end_of_cent)
-extrema(gamb_end_of_cent)

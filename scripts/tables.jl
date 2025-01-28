@@ -1,6 +1,8 @@
 using SummaryTables, DataFrames, Printf
 import WriteDocx as W
 
+tablespath = resultspath
+
 ### Table with evaluation scores
 get_mean_score(e::SDM.SDMensembleEvaluation, t, m) = mean(e.results[t][m].score)
 scores = [
@@ -43,4 +45,4 @@ doc = W.Document(
     ]),
 )
 
-W.save(joinpath("tables", "tables_natcc.docx"), doc)
+W.save(joinpath(tablespath, "tables.docx"), doc)
