@@ -110,10 +110,12 @@ function cubregspline!(Xp, x; xk::AbstractVector, Fm::Matrix{Float64})
         ajm /= h
         ajp /= h
     end
-    @inbounds @views Xp .= cjm .* Fm[:, j] .+ cjp .* Fm[:, j+1]
+    @inbounds @simd for i in eachindex(Xp)
+        Xp[i] = cjm * Fm[i, j] + cjp * Fm[i, j+1]
+    end
     Xp[j] += ajm
     Xp[j+1] += ajp
-    return Xp
+    return
 end
 cubregspline(x; xk::AbstractVector, Fm::Matrix{Float64}) = cubregspline!(similar(xk), x; xk, Fm)
 
