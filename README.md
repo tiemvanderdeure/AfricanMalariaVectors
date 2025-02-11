@@ -1,4 +1,4 @@
-# Climate change favours African malaria vectors
+# Code for "Climate change favours African malaria vectors"
 
 This repository contains code for "Climate change favours African malaria vectors" by van der Deure, Nogués-Bravo, Njotto & Stensgaard, which is currently in preparation. In this publication, we investigate the current and future climate and land use conditions for six dominant and widely spread Africa malaria vectors.
 
