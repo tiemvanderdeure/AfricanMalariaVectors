@@ -29,8 +29,7 @@ end
 
 function MLJBase.train_test_pairs(resampler::GridCV, rows, X, y)
     fold = getfield.(Rasters.extract(resampler.samplinggrid, X), :fold)
-    nfolds = maximum(fold) #resampler.nfolds
-    map(1:nfolds) do f
+    map(1:resampler.nfolds) do f
         test = rows[fold .== f]
         train = Base.setdiff(rows, test)
         return (train, test)

@@ -63,19 +63,6 @@ function myerrorbars!(ax, x, y; dodge, dodge_gap = Makie.Automatic(), n_dodge = 
     errorbars!(ax, x̂[mask], first.(y), zeros(length(lower)), upper .- lower; kw...)
 end
 
-function compute_x(x, width, gap, dodge, dodge_gap)
-    scale_width(dodge_gap, n_dodge) = (1 - (n_dodge - 1) * dodge_gap) / n_dodge
-    function shift_dodge(i, dodge_width, dodge_gap)
-        (dodge_width - 1) / 2 + (i - 1) * (dodge_width + dodge_gap)
-    end
-    width *= 1 - gap
-    n_dodge = maximum(dodge)
-    dodge_width = scale_width(dodge_gap, n_dodge)
-    shifts = shift_dodge.(dodge, dodge_width, dodge_gap)
-    return x .+ width .* shifts
-end
-
-
 # utils
 as_label(S) = replace(string(S), "_sl" => " s.l.")
 as_label(d::Date) = d == Date(2055) ?  "2041-2070" : "2071-2100"
