@@ -54,13 +54,15 @@ function colors2d(x, y; colors)
 end
 
 # to add errorbars to a bar plot whiskers
-function myerrorbars!(ax, x, y; dodge, dodge_gap = Makie.Automatic(), n_dodge = Makie.Automatic(), gap = 0.2, width = Makie.Automatic(), kw...)
+function myerrorbars!(
+    ax, x, y, error_both; 
+    dodge, dodge_gap = Makie.Automatic(), n_dodge = Makie.Automatic(), gap = 0.2, width = Makie.Automatic(), kw...)
     x̂, barwidth = Makie.compute_x_and_width(x, width, gap, dodge, n_dodge, dodge_gap)
     mask = .!isempty.(y)
     y = y[mask]
     lower = first.(y)
     upper = last.(y)
-    errorbars!(ax, x̂[mask], first.(y), zeros(length(lower)), upper .- lower; kw...)
+    errorbars!(ax, x̂, y, error_both; kw...)
 end
 
 # utils

@@ -335,13 +335,17 @@ fig5 = let bivcmap = bivariate_colormap(xticks, yticks; colors = brewer_seqseq2)
         if i > 1
             linkaxes!(ax, content(bargl[1,1]))
         end
-        data = vcat(([pop_at_risk.current[s]; vec(mean(pop_at_risk.future[s][ssp = At(ssp)]; dims = :gcm))] for s in FOCUS_SPECIES)...)
+        data = mapreduce(vcat, FOCUS_SPECIES) do s
+            [pop_at_risk.current[s]; vec(mean(pop_at_risk.future[s][ssp = At(ssp)]; dims = :gcm))] 
+        end
         cats = repeat(eachindex(FOCUS_SPECIES), inner = 3)
         dodge = repeat(1:3, outer = length(FOCUS_SPECIES))
         barplot!(ax, cats, data; dodge, color = dodge, dodge_gap = 0, colormap = barscmap)
         # add uncertainty bars
-        data_whiskers = vcat(([(); vec(extrema(pop_at_risk.future[s][ssp = At(ssp)]; dims = :gcm))] for s in FOCUS_SPECIES)...)
-        AMV.myerrorbars!(ax, cats, data_whiskers; dodge, dodge_gap = 0, color = :black, whiskerwidth = 5, linewidth = 1)
+        data_whiskers = mapreduce(vcat, FOCUS_SPECIES) do s
+            [std(pop_at_risk.current[s]); vec(std(pop_at_risk.future[s][ssp = At(ssp)]; dims = :gcm))] 
+        end
+        AMV.myerrorbars!(ax, cats, data, data_whiskers; dodge, dodge_gap = 0, color = :black, whiskerwidth = 5, linewidth = 1)
     end
     colgap!(bargl, 5)
 
