@@ -106,14 +106,6 @@ bshapvals_future_comb = map(bshapvals_future) do s
         lulc = s.lulc))
 end
 
-using Rasters.Lookups
-xdim = -17.991806203550002:0.041666666500000005:51.92486018345001
-ydim = 24.99152731785001:-0.0416666665:-34.92513910914999 
-ds = (X(xdim; sampling = Intervals(Start())), Y(ydim; sampling = Intervals(Start())))
-ras = Raster(ones(ds))
-extr = extract(ras, DimPoints(ds), skipmissing = false)
-getfield.(extr, 2) .|> ismissing |> count
-
 bg = Rasters.sample(Xoshiro(0), Rasters.shiftlocus(Lookups.Center(), predictors.current), 10000; skipmissing = true, geometry = (X, Y)) |> Tables.columntable
 bg_combined = (temperature = bg.bio1, precipitation = bg.bio12 , lulc = bg.lulc)
 
@@ -285,17 +277,6 @@ brewer_seqseq2 = [
     colorant"#ffac36" colorant"black"
     colorant"#f3f3f3" colorant"#209ebe"
 ]
-
-#=
-tolochko_redblue = [
-    colorant"#dd0027" colorant"#4f2d4c"
-    colorant"#dcdcdc" colorant"#0072a9"
-]
-tolochko_redblue2 = [
-    colorant"#4f2d4c" colorant"#dd0027"
-    colorant"#dcdcdc" colorant"#0072a9"
-]
-=#
 
 fig5 = let bivcmap = bivariate_colormap(xticks, yticks; colors = brewer_seqseq2), 
     barscmap = :blues,
