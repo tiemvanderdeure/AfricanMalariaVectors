@@ -7,7 +7,7 @@ countries = naturalearth("ne_10m_admin_0_countries")
 global imagepath = resultspath
 
 ## Figure 1 - scatter plots of temperature and precipitation
-let colors = (:lightblue, :purple)
+fig1 = let colors = (:lightblue, :purple)
     temp_prec = bioclim.current[(:bio1, :bio12)]
     temp_prec_points = map(x -> (extract(temp_prec, x; geometry = false, skipmissing = true)), occs_thinned)
     temp_prec_points_all = vcat(temp_prec_points...) |> Tables.columntable
@@ -21,7 +21,7 @@ let colors = (:lightblue, :purple)
 
         data = (temp_prec_points_all, temp_prec_focus_species[S])
         pointdata = (points_all, points_focus_species[S])
-        labels = ("All\nAnopheles", "A. $(as_label(S))")
+        labels = ("All\nAnopheles", "An. $(as_label(S))")
 
         ## map on the left
         ma = map_axis(gl[1,1], tellwidth = true, tellheight = true, aspect = nothing)
@@ -65,8 +65,9 @@ let colors = (:lightblue, :purple)
 
     [rowsize!(fig.layout, i, Fixed(400)) for i in 1:3] # fix the rowsize so layout can be resolved
     resize_to_layout!(fig)
-    save(joinpath(imagepath, "figure1.png"), fig)
+    fig
 end
+save(joinpath(imagepath, "figure1.png"), fig1)
 
 #### Figure 2 - maps with projections
 let cmap = Reverse(:Spectral), colorrange = (0,1)
@@ -77,7 +78,7 @@ let cmap = Reverse(:Spectral), colorrange = (0,1)
             plot!(axes[1], preds.current[s]; colormap = cmap, colorrange)
             plot!(axes[2], preds_future_mean[s][Ti = At(Date(2055)), ssp = At(ssp)]; colormap = cmap, colorrange)
             plot!(axes[3], preds_future_mean[s][Ti = At(Date(2085)), ssp = At(ssp)]; colormap = cmap, colorrange)
-            Label(fig[1, i, Top()], "A. " * as_label(s), font = :bold_italic, padding = (0,0,5,0))
+            Label(fig[1, i, Top()], "An. " * as_label(s), font = :bold_italic, padding = (0,0,5,0))
             colsize!(fig.layout, i, Aspect(1, 1.0))
         end
         for (i, l) in enumerate(["current", "2041-2070", "2071-2100"])
@@ -305,7 +306,7 @@ fig5 = let bivcmap = bivariate_colormap(xticks, yticks; colors = brewer_seqseq2)
     for (i, ssp) in enumerate(SSPS)
         ax = Axis(bargl[1,i], 
             limits = (nothing, nothing, 0, nothing),
-            xticks = (eachindex(FOCUS_SPECIES), collect(as_label.(FOCUS_SPECIES))), xticklabelrotation = pi/4, 
+            xticks = (eachindex(FOCUS_SPECIES), "An. " .* collect(as_label.(FOCUS_SPECIES))), xticklabelrotation = pi/4, 
             yticksvisible = i == 1, yticklabelsvisible = i == 1,
             ylabel = i == 1 ? "population at risk (millions)" : "",
             ytickformat = x -> string.(floor.(Int, x ./ 1_000_000)),
@@ -341,7 +342,7 @@ fig5 = let bivcmap = bivariate_colormap(xticks, yticks; colors = brewer_seqseq2)
     legendpopf(ticks)= [string.(Int.(ticks[1:end-1])); ">"* string(Int(ticks[end-1]))]
     bivariate_cmap_legend(
         bivlegendlayout[1,1], bivcmap; 
-        yticksf = legendpopf, ylabel = "Population\ndensity", xlabel = "A. gambiae \nsuitability",
+        yticksf = legendpopf, ylabel = "Population\ndensity", xlabel = "An. gambiae \nsuitability",
         xlabelpadding = 0, ylabelpadding = 0)
 
     # bars legend
@@ -362,6 +363,6 @@ fig5 = let bivcmap = bivariate_colormap(xticks, yticks; colors = brewer_seqseq2)
     rowgap!(fig.layout, 0)
     colgap!(fig.layout, 5)
     resize_to_layout!(fig)
-    save(joinpath(imagepath, "figure5.png"), fig)
     fig
 end
+save(joinpath(imagepath, "figure5.png"), fig5)
