@@ -6,16 +6,29 @@ const DATES = Ti([Date(2055), Date(2085)])
 ## Climate data
 
 function load_bioclim(predictors; aggregate= true, aggregation_factor = 5)
-    bio = RasterStack(CHELSA{BioClim}, predictors; lazy = true)
-    current = read(crop(bio; to = EXTENT))
-    if aggregate
-        current = Rasters.aggregate(mean, current, aggregation_factor; skipmissingval = true)
-    end
+    current = load_current_bioclim(predictors, aggregate, aggregation_factor)
 
     future = (@d load_future_bioclim.(Ref(predictors), GCMS, SSPS, DATES, aggregate, aggregation_factor)) |>
         RasterSeries |> Rasters.combine
 
     return (; current, future)
+end
+
+function load_current_bioclim(predictors, aggregate, aggregation_factor)
+    bio = RasterStack(CHELSA{BioClimPlus}, predictors; lazy = true, missingval=nothing)
+    current = read(crop(bio; to = EXTENT))
+    # Fix an issue with CHELSA data where 0s are typemax
+    map((:gst, :gsp), (1e3, 1e6)) do k, v
+        @show k
+        if haskey(current, k)
+            current[k][current[k] .> v] .= 0 # CHELSA data is stored as UInt32, so we need to add one to the values
+        end
+    end
+
+    if aggregate
+        current = Rasters.aggregate(mean, current, aggregation_factor; skipmissingval = true)
+    end
+    return current
 end
 
 function load_future_bioclim(predictors, gcm, ssp, date, aggregate, aggregation_factor)
@@ -46,7 +59,7 @@ const LULC_TYPES = (
 function load_lulc(roi)
     # from https://zenodo.org/records/4584775
     basepath = maybe_download_lulc() 
-    lulc = Raster(joinpath(basepath, "global_LULC_2015.tif"), name = :lulc)
+    current = load_current_lulc()
     lulc_res = CA.categorical(resample(lulc; to = roi, method = :mode))
     current = CA.recode(lulc_res, missing, LULC_TYPES...) # default to missing so permanent water is missing
 
@@ -56,6 +69,8 @@ function load_lulc(roi)
 
     return (; current, future)
 end
+
+load_current_lulc() = Raster(joinpath(basepath, "global_LULC_2015.tif"), name = :lulc)
 
 function load_f_lulc(basepath, ssp, date; kw...) 
     ssp = "$(string(SSP126)[1:4])_RCP$(string(SSP126)[5:6])"
