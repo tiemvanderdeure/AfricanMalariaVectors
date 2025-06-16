@@ -10,7 +10,7 @@ scores = [
     for e in evaluations, m in keys(measures), t in (:train, :test)
 ]
 
-species_cells = Cell.("A. " .* as_label.(FOCUS_SPECIES), italic = true, halign = :left) |> collect
+species_cells = Cell.("An. " .* as_label.(FOCUS_SPECIES), italic = true, halign = :left) |> collect
 scores_cells = mapreduce(hcat, keys(measures)) do m
     map(collect(evaluations)) do e
         Cell(@sprintf "%0.2f (%0.2f)" get_mean_score(e, :test, m) get_mean_score(e, :train, m))
