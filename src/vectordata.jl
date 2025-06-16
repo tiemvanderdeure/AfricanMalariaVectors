@@ -51,8 +51,6 @@ function load_occurrences()
 
     all_data = [mapdata; massey; snow]
     unique!(all_data)
-    filter!(x -> x.year_start < 2010 && x.year_end > 1980, all_data)
-
     sp_md = species_metadata()
     all_data = innerjoin(all_data, sp_md; on = :species)
     return all_data

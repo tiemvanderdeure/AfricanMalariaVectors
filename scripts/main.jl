@@ -31,14 +31,16 @@ predictors = map(b -> mask(b; with = roi), predictors)
 # load occurrence data
 all_occurrences = load_occurrences()
 
+occs_filtered = filter(x -> x.year_start < 2010 && x.year_end > 1980, all_occurrences)
+
 occs_by_species = NamedTuple(
     S => filter(
-        x -> Symbol(x.species) == S || (!ismissing(x.complex) && Symbol(x.complex) == S), all_occurrences
+        x -> Symbol(x.species) == S || (!ismissing(x.complex) && Symbol(x.complex) == S), occs_filtered
     ).geometry 
     for S in FOCUS_SPECIES
 )
 
-ocs_no_dupes = unique(all_occurrences, [:species, :geometry, :complex])
+ocs_no_dupes = unique(occs_filtered, [:species, :geometry, :complex])
 
 # extract occurrence data for each species
 occs_bio = map(x -> extract(predictors.current, x; skipmissing = true, geometry = true), occs_by_species)
