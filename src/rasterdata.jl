@@ -19,7 +19,6 @@ function load_current_bioclim(predictors, aggregate, aggregation_factor)
     current = read(crop(bio; to = EXTENT))
     # Fix an issue with CHELSA data where 0s are typemax
     map((:gst, :gsp), (1e3, 1e6)) do k, v
-        @show k
         if haskey(current, k)
             current[k][current[k] .> v] .= 0 # CHELSA data is stored as UInt32, so we need to add one to the values
         end
@@ -33,7 +32,7 @@ end
 
 function load_future_bioclim(predictors, gcm, ssp, date, aggregate, aggregation_factor)
     data = RasterStack(
-        CHELSA{Future{BioClim, CMIP6, gcm, ssp}}, predictors; 
+        CHELSA{Future{BioClimPlus, CMIP6, gcm, ssp}}, predictors; 
         date, lazy = true, missingval = nothing
     )
     data = read(crop(data; to = EXTENT))
@@ -59,7 +58,7 @@ const LULC_TYPES = (
 function load_lulc(roi)
     # from https://zenodo.org/records/4584775
     basepath = maybe_download_lulc() 
-    current = load_current_lulc()
+    lulc = load_current_lulc(basepath)
     lulc_res = CA.categorical(resample(lulc; to = roi, method = :mode))
     current = CA.recode(lulc_res, missing, LULC_TYPES...) # default to missing so permanent water is missing
 
@@ -70,7 +69,7 @@ function load_lulc(roi)
     return (; current, future)
 end
 
-load_current_lulc() = Raster(joinpath(basepath, "global_LULC_2015.tif"), name = :lulc)
+load_current_lulc(basepath = maybe_download_lulc()) = Raster(joinpath(basepath, "global_LULC_2015.tif"), name = :lulc)
 
 function load_f_lulc(basepath, ssp, date; kw...) 
     ssp = "$(string(SSP126)[1:4])_RCP$(string(SSP126)[5:6])"

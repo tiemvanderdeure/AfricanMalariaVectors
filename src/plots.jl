@@ -21,7 +21,7 @@ end
 function bivariate_cmap_legend(
     gp, cmap; 
     halign = :center, valign = :center, 
-    height = nothing, width = nothing, 
+    tellheight = false, tellwidth = false,
     xticksf = Base.Fix1(Broadcast.broadcast, string), yticksf = Base.Fix1(Broadcast.broadcast, string),
     kw... # to pass to axis
 )
@@ -30,8 +30,8 @@ function bivariate_cmap_legend(
     yticks = [yspan[1]; yspan[2,:]]
     ax = Axis(
         gp; 
-        halign, valign, height, width, 
-        tellheight = false, tellwidth = false,
+        halign, valign, 
+        tellheight, tellwidth,
         xticks = (0:size(xspan,2), xticksf(xticks)),
         yticks = (0:size(yspan,2), yticksf(yticks)),
         kw...
