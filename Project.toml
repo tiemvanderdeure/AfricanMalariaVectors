@@ -55,3 +55,6 @@ StatisticalMeasures = "0.1.6"
 Statistics = "1.11.1"
 Tables = "1.12.0"
 ThreadsX = "0.1.12"
+
+[sources]
+SpeciesDistributionModels = {url = "https://github.com/tiemvanderdeure/SpeciesDistributionModels.jl/"}
