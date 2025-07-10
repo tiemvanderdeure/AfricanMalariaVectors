@@ -274,18 +274,16 @@ end
 # get a bivariate color map
 xticks = [0, 0.25, 0.5, 0.75, 1]
 yticks = [0, 50, 500, 5000, Inf]
+legendpopf(ticks) = [string.(Int.(ticks[1:end-1])); ">"* string(Int(ticks[end-1]))]
+
 brewer_seqseq2 = [
     colorant"#ffac36" colorant"black"
     colorant"#f3f3f3" colorant"#209ebe"
 ]
+bivcmap = bivariate_colormap(xticks, yticks; colors = brewer_seqseq2)
 
-fig5 = let bivcmap = bivariate_colormap(xticks, yticks; colors = brewer_seqseq2), 
-    barscmap = :blues,
-    s = :gambiae
-
-    fig = Figure(size = (600, 800), fontsize = 12)
-
-    mapgl = fig[1,1:2] = GridLayout(alignmode = Mixed(left = 0, top = 0), valign = :top)
+# Function to plot the bivariate maps - used for fig 5 and supplementary figures
+function plot_bivariate!(mapgl, s; preds = preds, preds_future_mean = preds_future_mean, bivcmap = bivcmap)
     for (j, ssp) in enumerate(SSPS)
         ax = map_axis(mapgl[j, 1], title = j == 1 ? "Current" : "")
         plot!(ax, rasters_to_cmap(preds.current[s], pop; cmap = bivcmap))
@@ -299,7 +297,17 @@ fig5 = let bivcmap = bivariate_colormap(xticks, yticks; colors = brewer_seqseq2)
     # tweaks
     colgap!(mapgl, 5)
     rowgap!(mapgl, 5)
+    return mapgl
+end
 
+fig5 = let bivcmap = bivariate_colormap(xticks, yticks; colors = brewer_seqseq2), 
+    barscmap = :blues,
+    s = :gambiae
+
+    fig = Figure(size = (600, 800), fontsize = 12)
+
+    mapgl = fig[1,1:2] = GridLayout(alignmode = Mixed(left = 0, top = 0), valign = :top)
+    plot_bivariate!(mapgl, s; bivcmap)
     ## Bars
     bargl = fig[2,1] = GridLayout(alignmode = Mixed(left = 0, top = 0))
 
@@ -339,7 +347,6 @@ fig5 = let bivcmap = bivariate_colormap(xticks, yticks; colors = brewer_seqseq2)
     )
     rowsize!(bivlegendlayout, 1, Aspect(1, 1.0))
 
-    legendpopf(ticks)= [string.(Int.(ticks[1:end-1])); ">"* string(Int(ticks[end-1]))]
     bivariate_cmap_legend(
         bivlegendlayout[1,1], bivcmap; 
         yticksf = legendpopf, ylabel = "Population\ndensity", xlabel = "An. gambiae \nsuitability",
@@ -366,3 +373,20 @@ fig5 = let bivcmap = bivariate_colormap(xticks, yticks; colors = brewer_seqseq2)
     fig
 end
 save(joinpath(imagepath, "figure5.png"), fig5)
+
+### Supplementary figures for population - suitability maps for all other species
+for s in FOCUS_SPECIES
+    if s !== :gambiae
+        fig = Figure(size = (600, 600))
+        mapgl = fig[1,1:2] = GridLayout()
+        plot_bivariate!(mapgl, s; bivcmap)
+
+        bivariate_cmap_legend(
+            fig[2,2], bivcmap; 
+            yticksf = legendpopf, ylabel = "Population\ndensity", xlabel = "An. $(as_label(s)) \nsuitability",
+            xlabelpadding = 0, ylabelpadding = 0, tellheight = true, tellwidth = false, valign = :bottom,
+            height = 100, width = 100
+        )
+    save(joinpath(imagepath, "suitability_population_$(s).png"), fig)
+    end
+end
