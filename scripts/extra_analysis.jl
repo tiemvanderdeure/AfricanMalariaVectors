@@ -256,3 +256,20 @@ doc = W.Document(
     ]),
 )
 W.save(joinpath(resultspath, "forward_selection_results.docx"), doc)
+
+### Find the proportion of cover for each land type
+import Proj
+lulc = AMV.load_current_lulc(AMV.maybe_download_lulc())
+lulc_crop = crop(lulc; to = Rasters.reproject(roi; crs = crs(lulc)), touches = true)
+
+pct_cover_map = map(0x02:0x01:0x06) do id
+    binary = (lulc_recoded .== id) .+ 0.0 
+    resample(binary; to = roi, method = :average)
+end
+
+total_cover = broadcast((args...) -> sum(args), pct_cover_map...) # total non-water cover
+max_cover = max.(pct_cover_map...) # cover of dominant type
+max_cover_rel = (skipmissing(max_cover)) ./ (skipmissing(total_cover)) # correct for missing pixels
+filter!(!isnan, max_cover_rel) # filter out pixels with only water
+mean(>(0.95), max_cover_rel) # 70% of pixels have a dominant land cover type with > 95% cover
+mean(>(0.70), max_cover_rel) # 90% of pixels have a dominant land cover type with > 70% cover
