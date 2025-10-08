@@ -1,2 +1,4 @@
-Nili sl end of century:  905.8462975999998, (863.040768, 965.757632)
-Gambiae end of century:  885.9450624000001, (825.525248, 984.175488)
+Nili sl end of century:  934.3357952, (891.444032, 994.144)
+Gambiae end of century:  911.3149824, (852.019648, 1007.132032)
+Nili sl end of century (with population change):  3465.144974986915, (3309.9903309793663, 3674.133075232314)
+Gambiae end of century (with population change):  3398.2018315382747, (3201.163501845024, 3695.903992832696)
