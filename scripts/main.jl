@@ -102,10 +102,16 @@ preds_binary = map(p -> map((p, t) -> p .> t, p, thresholds), preds)
 
 ## population at risk
 pop_at_risk = (
-    current = map(p -> sum(skipmissing(pop .* p)), preds_binary.current), 
+    current = map(p -> sum(skipmissing(pop.current .* p)), preds_binary.current), 
     future = map(preds_binary.future) do p
-            [sum(skipmissing(pop .* s)) for s in eachslice(p; dims = (:gcm, :ssp, :Ti))]
-        end
+            [sum(skipmissing(pop.current .* s)) for s in eachslice(p; dims = (:gcm, :ssp, :Ti))]
+        end,
+    future_adjusted = map(preds_binary.future) do p
+        [sum(skipmissing(pop.future[sel] .* p[sel])) for sel in DimSelectors(dims(p, (:gcm, :ssp, Ti)))]
+    end,
+    future_no_climate_change = map(preds_binary.current) do p
+        [sum(skipmissing(pop.future[sel] .* p)) for sel in DimSelectors(dims(pop.future, (:ssp, :Ti)))]
+    end
 )
 
 #### Malaria data
@@ -160,4 +166,9 @@ open(joinpath(resultspath, "in_text_numbers.txt"), "w") do io
     nili_end_of_cent = pop_at_risk.future.nili_sl[Ti = 2, ssp = 2] ./ 1e6
     println(io, "Nili sl end of century:  $(mean(nili_end_of_cent)), $(extrema(nili_end_of_cent))")
     println(io, "Gambiae end of century:  $(mean(gamb_end_of_cent)), $(extrema(gamb_end_of_cent))")
+
+    gamb_end_of_cent = pop_at_risk.future_adjusted.gambiae[Ti = 2, ssp = 2] ./ 1e6
+    nili_end_of_cent = pop_at_risk.future_adjusted.nili_sl[Ti = 2, ssp = 2] ./ 1e6
+    println(io, "Nili sl end of century (with population change):  $(mean(nili_end_of_cent)), $(extrema(nili_end_of_cent))")
+    println(io, "Gambiae end of century (with population change):  $(mean(gamb_end_of_cent)), $(extrema(gamb_end_of_cent))")
 end

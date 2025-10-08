@@ -72,7 +72,7 @@ end
 load_current_lulc(basepath = maybe_download_lulc()) = Raster(joinpath(basepath, "global_LULC_2015.tif"), name = :lulc)
 
 function load_f_lulc(basepath, ssp, date; kw...) 
-    ssp = "$(string(SSP126)[1:4])_RCP$(string(SSP126)[5:6])"
+    ssp = "$(string(ssp)[1:4])_RCP$(string(ssp)[5:6])"
     yr = year(date)
     path = joinpath(basepath, ssp, "global_$(ssp)_$yr.tif")
     Raster(path, name = :lulc; kw...)
@@ -97,12 +97,54 @@ end
 
 ### Population data
 
-function load_worldpop(to)
+function load_worldpop(roi)
+    current = load_current_worldpop(roi)
+    future = load_future_worldpop(current)
+    return (; current, future)
+end
+
+function load_current_worldpop(to)
     dir = joinpath(RasterDataSources.rasterpath(), "WorldPop")
     if !isdir(dir) mkdir(dir) end
     filepath = joinpath(dir, "ppp_2020_1km_Aggregated.tif")
     fileurl = URI("https://data.worldpop.org/GIS/Population/Global_2000_2020/2020/0_Mosaicked/ppp_2020_1km_Aggregated.tif")
     maybe_download(fileurl, filepath)
     pop = Raster(filepath; lazy = true) |> replace_missing
-    return resample(read(crop(pop; to)); to, method = :sum) # aggregate might be better here?
+    return resample(read(crop(pop; to)); to, method = :sum)
+end
+
+function get_pop_ssp(ssp)
+    dir = joinpath(RasterDataSources.rasterpath(), "WIC_Population_Projections")
+    if !isdir(dir) mkdir(dir) end
+    ssp = string(ssp)[1:4]
+    filename = "PROJresult_AGE_$(ssp)_V14.csv"
+    url = URI("https://zenodo.org/records/14718294/files/$filename?download=1")
+    maybe_download(url, joinpath("data", filename))
+    return CSV.read(joinpath("data", filename), DataFrame)
+end
+
+
+function load_future_worldpop(current)
+    countries = naturalearth("ne_10m_admin_0_countries_iso") |> DataFrame
+    countries.ISO_N3 = parse.(Int, countries.ISO_N3)
+    yrs = Tuple(year.(DATES))
+
+    pop_changes = map(SSPS) do ssp
+        pop_ssp = get_pop_ssp(ssp)
+
+        filter!(x -> x.agest >= 0, pop_ssp)
+        pop_future_ssp1 = filter(x -> x.Time in (2020, yrs...), pop_ssp)
+        pop_totals_ssp1 = DataFrames.combine(groupby(pop_future_ssp1, [:region, :Time]), :pop => sum => :pop)
+        pop_unstack = unstack(pop_totals_ssp1, :Time, :pop)
+        for yr in Symbol.(yrs)
+            pop_unstack[!, yr] = pop_unstack[!, yr] ./ pop_unstack[!, Symbol(2020)]
+        end
+        pop_unstack.ISO_N3 = parse.(Int, replace.(pop_unstack.region, "reg" => ""))
+        pop_with_geometries = innerjoin(pop_unstack, countries, on = :ISO_N3)
+        pop_change_rasterized = rasterize(last, pop_with_geometries; to = current, fill = Symbol.(yrs))
+        cat(layers(pop_change_rasterized)...; dims = DATES)
+    end
+    relative_pop = cat(pop_changes...; dims = SSPS)
+    relative_pop = replace_missing(relative_pop, 1) # such that pixels with missing data do not completely disappear
+    return relative_pop .* current
 end

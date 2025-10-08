@@ -88,7 +88,7 @@ let cmap = Reverse(:Spectral), colorrange = (0,1)
         rowgap!(fig.layout, 5); colgap!(fig.layout, 5)
         resize_to_layout!(fig)
         filename = ssp == SSP370 ? "figure2.png" : "extended_figure1.png"
-        save(joinpath(imagepath, filename), fig)
+        save(joinpath(imagepath, filename), fig, px_per_unit = 5)
     end
 end
 
@@ -180,7 +180,7 @@ let colorrange = (-0.5, 0.5),
 
         # save figures
         if K == :gambiae
-            save(joinpath(imagepath, "figure3.png"), fig)
+            save(joinpath(imagepath, "figure3.png"), fig, px_per_unit = 5)
         else
             save(joinpath(imagepath, "extended_figure_$(j)_$K.png"), fig)
         end
@@ -283,7 +283,7 @@ brewer_seqseq2 = [
 bivcmap = bivariate_colormap(xticks, yticks; colors = brewer_seqseq2)
 
 # Function to plot the bivariate maps - used for fig 5 and supplementary figures
-function plot_bivariate!(mapgl, s; preds = preds, preds_future_mean = preds_future_mean, bivcmap = bivcmap)
+function plot_bivariate!(mapgl, s; pop = pop.current, preds = preds, preds_future_mean = preds_future_mean, bivcmap = bivcmap)
     for (j, ssp) in enumerate(SSPS)
         ax = map_axis(mapgl[j, 1], title = j == 1 ? "Current" : "")
         plot!(ax, rasters_to_cmap(preds.current[s], pop; cmap = bivcmap))
@@ -372,7 +372,7 @@ fig5 = let bivcmap = bivariate_colormap(xticks, yticks; colors = brewer_seqseq2)
     resize_to_layout!(fig)
     fig
 end
-save(joinpath(imagepath, "figure5.png"), fig5)
+save(joinpath(imagepath, "figure5.png"), fig5, px_per_unit = 10)
 
 ### Supplementary figures for population - suitability maps for all other species
 for s in FOCUS_SPECIES
@@ -390,3 +390,57 @@ for s in FOCUS_SPECIES
     save(joinpath(imagepath, "suitability_population_$(s).png"), fig)
     end
 end
+
+### Supplementary figure for population with future population estimates
+# C
+fig_future_pop = let barscmap = :blues,
+        cats = repeat(eachindex(FOCUS_SPECIES), inner = 3),
+        dodge = repeat(1:3, outer = length(FOCUS_SPECIES))
+
+    fig = Figure(size = (800, 500))
+    # plot without climate change - only demographic changes
+    ax = Axis(fig[1,3], 
+        limits = (nothing, nothing, 0, nothing),
+        xticks = (eachindex(FOCUS_SPECIES), "An. " .* collect(as_label.(FOCUS_SPECIES))), xticklabelrotation = pi/4, 
+        yticksvisible = false, yticklabelsvisible = false,
+        yticks = LinearTicks(8),
+        xgridvisible = false,
+        title = "SSP370 without climate change"
+    )
+    hidespines!(ax, :t, :r)
+    data = mapreduce(vcat, FOCUS_SPECIES) do s
+        [pop_at_risk.current[s]; pop_at_risk.future_no_climate_change[s][ssp = At(SSP370)]] 
+    end
+    barplot!(ax, cats, data; dodge, color = dodge, dodge_gap = 0, colormap = barscmap)
+    # Future projections
+    for (i, ssp) in enumerate(SSPS)
+        ax = Axis(fig[1,i], 
+            limits = (nothing, nothing, 0, nothing),
+            xticks = (eachindex(FOCUS_SPECIES), "An. " .* collect(as_label.(FOCUS_SPECIES))), xticklabelrotation = pi/4, 
+            ylabel = i == 1 ? "population at risk (millions)" : "",
+            yticksvisible = i == 1, yticklabelsvisible = i == 1,
+            ytickformat = x -> string.(floor.(Int, x ./ 1_000_000)),
+            xgridvisible = false,
+            title = string(ssp),
+            yticks = LinearTicks(8),
+        )
+        hidespines!(ax, :t, :r)
+        linkaxes!(ax, content(fig[1,3]))
+        data = mapreduce(vcat, FOCUS_SPECIES) do s
+            [pop_at_risk.current[s]; vec(mean(pop_at_risk.future_adjusted[s][ssp = At(ssp)]; dims = :gcm))] 
+        end
+        barplot!(ax, cats, data; dodge, color = dodge, dodge_gap = 0, colormap = barscmap)
+        # add uncertainty bars
+        data_whiskers = mapreduce(vcat, FOCUS_SPECIES) do s
+            [std(pop_at_risk.current[s]); vec(std(pop_at_risk.future_adjusted[s][ssp = At(ssp)]; dims = :gcm))] 
+        end
+        AMV.myerrorbars!(ax, cats, data, data_whiskers; dodge, dodge_gap = 0, color = :black, whiskerwidth = 5, linewidth = 1)
+    end
+    # bars legend
+    labels = ["current", as_label.(DATES)...]
+    elements = [PolyElement(color = i, colorrange = (1, length(labels)), colormap = barscmap) for i in eachindex(labels)]
+    Legend(fig[1,4], elements, labels, halign = :left, valign = :bottom, framevisible = false,
+        padding = (0,0,0,0))
+    fig
+end
+save(joinpath(imagepath, "pop_at_risk_forecasts.png"), fig_future_pop, px_per_unit = 3)
