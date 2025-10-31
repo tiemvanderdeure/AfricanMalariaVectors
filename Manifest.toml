@@ -1,8 +1,8 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.2"
+julia_version = "1.11.7"
 manifest_format = "2.0"
-project_hash = "58d0e61697dc8764cd7398e8e00ad98e68a8b114"
+project_hash = "99ed2092930afa74c5104e7374cd500d2f2ec381"
 
 [[deps.ASCIIrasters]]
 git-tree-sha1 = "1880b17ca0e1c0edd3fa8a968fca20516af7436a"
@@ -1649,6 +1649,12 @@ git-tree-sha1 = "1e98f8f732e7035c4333135b75605b74f3462b9b"
 uuid = "f8716d33-7c4a-5097-896f-ce0ecbd3ef6b"
 version = "0.6.0"
 
+[[deps.NCDatasets]]
+deps = ["CFTime", "CommonDataModel", "DataStructures", "Dates", "DiskArrays", "NetCDF_jll", "NetworkOptions", "Printf"]
+git-tree-sha1 = "be1095e2b767c19529409ec670bcfb01b825d717"
+uuid = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
+version = "0.14.8"
+
 [[deps.NNlib]]
 deps = ["Adapt", "Atomix", "ChainRulesCore", "GPUArraysCore", "KernelAbstractions", "LinearAlgebra", "Random", "Statistics"]
 git-tree-sha1 = "bdc9d30f151590aca0af22690f5ab7dc18a551cb"
@@ -1762,7 +1768,7 @@ version = "2.5.3+0"
 [[deps.OpenLibm_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "05823500-19ac-5b8b-9628-191a04bc5112"
-version = "0.8.1+2"
+version = "0.8.5+0"
 
 [[deps.OpenMPI_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Hwloc_jll", "JLLWrappers", "LazyArtifacts", "Libdl", "MPIPreferences", "TOML", "Zlib_jll"]

@@ -83,7 +83,7 @@ end;
 
 ## generate predictions for current and future climate
 preds = map(predictors) do b
-    ThreadsX.map(ensembles) do e
+    map(ensembles) do e
         SDM.predict(e, b; reducer = mean)
     end |> NamedTuple{keys(ensembles)}
 end
@@ -171,4 +171,22 @@ open(joinpath(resultspath, "in_text_numbers.txt"), "w") do io
     nili_end_of_cent = pop_at_risk.future_adjusted.nili_sl[Ti = 2, ssp = 2] ./ 1e6
     println(io, "Nili sl end of century (with population change):  $(mean(nili_end_of_cent)), $(extrema(nili_end_of_cent))")
     println(io, "Gambiae end of century (with population change):  $(mean(gamb_end_of_cent)), $(extrema(gamb_end_of_cent))")
+end
+
+# Write to files
+if true # set to true to write output files
+    import NCDatasets
+    writepath = joinpath(RasterDataSources.rasterpath(), "AfricanMalariaVectors")
+
+    for K in FOCUS_SPECIES
+        isdir(writepath) || mkpath(writepath)
+        write(joinpath(writepath, "$(K)_current.nc"), preds.current[K])
+        fraw = preds.future[K]
+        ftowrite = set(fraw, 
+            Dim{:gcm} => string.(dims(fraw, :gcm)), 
+            Dim{:ssp} => string.(dims(fraw, :ssp)), 
+            Dim{:Ti} => string.(year.(dims(fraw, :Ti)))
+        )
+        write(joinpath(writepath, "$(K)_future.nc"), ftowrite)
+    end
 end
